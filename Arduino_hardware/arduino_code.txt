@@ -1,0 +1,143 @@
+int trigger = A2, echo = A3, buzzer = 7, call_button = 11, audio_button = A0;
+long duration = 0, distance = 0, threshold = 60;
+
+int call_button_state = 0, prev_call_button_state = 0, audio_button_state = 0, prev_audio_button_state = 0, obstacle_flag = 0, prev_obstacle_flag = 0;
+int audio_flag = 1, interval = 150, buzzer_state = LOW;
+
+unsigned long current_millis = 0, prev_millis = 0;
+
+void setup()
+{
+  Serial.begin(9600);
+  Serial.println("BLIND CAP");
+
+  pinMode(trigger,OUTPUT);
+  pinMode(echo,INPUT);
+
+  pinMode(buzzer,OUTPUT);
+  pinMode(call_button,INPUT);
+  pinMode(audio_button,INPUT);
+  
+  digitalWrite(buzzer,LOW);
+
+}
+
+void loop() 
+{
+  digitalWrite(trigger, LOW);
+  delayMicroseconds(2);
+  digitalWrite(trigger, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(trigger, LOW);
+  duration = pulseIn(echo, HIGH);
+  distance = duration/29/2;
+
+  //Serial.println(distance);
+
+  if (distance <= threshold && distance >= 5)
+  {
+    obstacle_flag = 1;
+  }
+  else
+  {
+    obstacle_flag = 0;
+  }
+
+  call_button_state = digitalRead(call_button);
+  audio_button_state = digitalRead(audio_button);
+
+  if (call_button_state == 1)
+  {
+    call_button_state = 1;
+  }
+  else
+  {
+    call_button_state = 0;
+  }
+
+  if (audio_button_state == 1)
+  {
+    audio_button_state = 1;
+  }
+  else
+  {
+    audio_button_state = 0;
+  }
+
+  if (prev_obstacle_flag != obstacle_flag)
+  {
+    prev_obstacle_flag = obstacle_flag;
+    if (prev_obstacle_flag == 1)
+    {
+      Serial.println("1");
+      delay(500);
+      digitalWrite(buzzer,HIGH);
+      buzzer_state = HIGH;
+      prev_millis = millis();
+    }
+  }
+
+  if (prev_audio_button_state != audio_button_state)
+  {
+    prev_audio_button_state = audio_button_state;
+    if (prev_audio_button_state == 1)
+    {
+      if (audio_flag == 1)
+      {
+        audio_flag = 0;
+        Serial.println("2");
+        digitalWrite(buzzer,HIGH);
+        delay(150);
+        digitalWrite(buzzer,LOW);
+      }
+      else if(audio_flag == 0)
+      {
+        audio_flag = 1;
+        Serial.println("3");
+        digitalWrite(buzzer,HIGH);
+        delay(150);
+        digitalWrite(buzzer,LOW);
+        delay(150);
+        digitalWrite(buzzer,HIGH);
+        delay(150);
+        digitalWrite(buzzer,LOW);
+      }
+    }
+  }
+
+  if (prev_call_button_state != call_button_state)
+  {
+    prev_call_button_state = call_button_state;
+    if (prev_call_button_state == 1)
+    {
+      Serial.println("4");
+      digitalWrite(buzzer,HIGH);
+      delay(150);
+      digitalWrite(buzzer,LOW);
+    }
+  }
+
+  if (obstacle_flag == 1)
+  {
+    current_millis = millis();
+    if (current_millis - prev_millis >= interval)
+    {
+      prev_millis = current_millis;
+      if (buzzer_state == HIGH)
+      {
+        digitalWrite(buzzer,LOW);
+        buzzer_state = LOW;
+      }
+      else if (buzzer_state == LOW)
+      {
+        digitalWrite(buzzer,HIGH);
+        buzzer_state = HIGH;
+      }
+    }
+  }
+  else
+  {
+    digitalWrite(buzzer,LOW);
+  }
+  
+}
